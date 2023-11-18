@@ -1,14 +1,19 @@
-import { add, get } from "./store"
+import * as cmdStore from "./store"
 
 type CommandOptions = {
     builder?: (b: OptionFns) => void
+    alias?: string
+    group?: string
     validateFn?: (inputs:any[]) => boolean
+    desc?: string
 }
+type HandlerFn = (inputs:(string|number)[], msgr) => void
 type OptionFns = {
     option: (name: string, opts: OptionOpts) => OptionFns
-    handler: () => void
+    handler: (handlerFn:HandlerFn) => void
 }
 type OptionOpts<T=string> = {
+    desc?: string
     default?: any
     validation?: (input:string, prev:string) => boolean
     required?: boolean
@@ -16,26 +21,25 @@ type OptionOpts<T=string> = {
 }
 
 
-export const buildCmd = (name: string, cmdOpts:CommandOptions={}) => {
+export const buildCmd = (name: string, cmdOpts:CommandOptions={} as any) => {
     const cmd: any = {
         name,
         ...cmdOpts,
         options: [] as any[]
     }
 
-    return {
-        option: function(name: string, opts: OptionOpts) {
-            cmd.options.push({
-                name,
-                ...opts
-            })
+    if (!cmdOpts.builder) return console.warn(`${name} cmd, has no builder`)
+
+    cmdOpts.builder({
+        option: function(name, opts) {
+            cmd.options.push({name, ...opts})
             return this
         },
         handler: function(handlerFn) {
             cmd.handler = handlerFn
-            add(cmd.name, cmd)
+            cmdStore.add('name', cmd)
         }
-    }
+    })
 }
 
 export const runCmd = (input: string, msgr) => {
@@ -43,14 +47,18 @@ export const runCmd = (input: string, msgr) => {
     const cmdName = input[0]
     values = values.slice(1)
 
-    const myCmd = get(cmdName)
+    const myCmd = cmdStore.get(cmdName)
+    const response: any[] = []
     if (!myCmd) return msgr(`Command: ${myCmd}, does not exist`)
-}
-
-buildCmd('run', {
-    builder: b => {
-        b.option('', {
-
-        })
+    for (let i=0; i< myCmd.options.length; i++) {
+        const myOpt = myCmd.options[i]
+        let myValue = values[i]
+        if (myOpt.default && myValue === undefined) myValue = myOpt.default
+        if (myOpt.required && myValue === undefined) return msgr.error('')
+        if (myOpt.map) myValue = myOpt.map(myValue)
+        if (myOpt.validation && !myOpt.valdation(myValue, values[i-1])) return msgr.error('')
+        response.push(myValue)
     }
-})
+    if (myCmd.validation && !myCmd.valdation(response)) return msgr.error('')
+    myCmd.handler(response, msgr)
+}

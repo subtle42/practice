@@ -7,7 +7,16 @@ const playerSchema = {
     properties: {
         name: {type: 'string'},
         id: {type: 'string'},
-        zone: {type: 'string'}
+        zone: {type: 'string'},
+        room: {type: 'string'},
+        equipment: {
+            type: 'object',
+            properties: {}
+        },
+        inventory: {
+            type: 'array',
+            elements: {type: 'string'}
+        }
     },
     additionalProperties: false
 } as const
