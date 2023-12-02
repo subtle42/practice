@@ -1,0 +1,2 @@
+icons
+backpack, award, person

@@ -7,7 +7,9 @@ import Modal from 'react-bootstrap/Modal'
 import { useForm, SubmitHandler, SubmitErrorHandler } from 'react-hook-form'
 import { fieldUtil } from '../form.utils'
 
-type Props = {}
+type Props = {
+    select: (input: string) => void
+}
 
 type IForm = {
     name: string
@@ -24,7 +26,7 @@ export const ZoneComponent:React.FC<Props> = (props) => {
     const [show, setShow] = React.useState(false)
     const [searchText, setSearchText] = React.useState('')
     const [removeZone, setRemoveZone] = React.useState<undefined | string>()
-    const {register, handleSubmit, formState, reset} = useForm<IForm>()
+    const {register, handleSubmit, formState, reset, setValue} = useForm<IForm>()
     const onValid: SubmitHandler<IForm> = (data) => {
         console.log(data)
         reset()
@@ -43,14 +45,14 @@ export const ZoneComponent:React.FC<Props> = (props) => {
                 </Form.FloatingLabel>
             </Form.Group>
             <div style={{display: 'flex', flexDirection: 'row-reverse'}}>
-                <Button variant='outline-secondary'
+                <Button variant='secondary'
                     onClick={() => {
                         setShow(false)
                         reset()
                     }}>
                     Cancel
                 </Button>
-                <Button variant='outline-primary'
+                <Button variant='primary'
                     type='submit'>
                     Save
                 </Button>
@@ -71,10 +73,15 @@ export const ZoneComponent:React.FC<Props> = (props) => {
         return <ListGroup>
             {zones.filter(x => x.includes(searchText))
             .map((zone, index) => <ListGroup.Item action key={index}
+                onDoubleClick={(e) => props.select(zone)}
                 style={{display: 'flex', justifyContent: 'space-between'}}>
                 <div>{zone}</div>
                 <div>
-                    <Button size='sm' variant='outline-info'>
+                    <Button size='sm' variant='outline-info' onClick={(e) => {
+                        e.stopPropagation()
+                        reset({name: zone})
+                        setShow(true)
+                    }}>
                         <i className="bi bi-pencil-square"></i>
                     </Button>
                     <Button size='sm' variant='outline-danger' onClick={(e) => {
